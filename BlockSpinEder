@@ -1,517 +1,933 @@
--- BLOCK SPIN EDER PANEL | COMPATIBLE CON DELTA EXECUTOR
--- ADVERTENCIA: Viola los Términos de Servicio de Roblox. Úsalo bajo tu propia responsabilidad.
+--[[
+    PANEL: BlockSpinEder EDER2302
+    Hecho también por: TOCINACIO23021
+    Versión: 3.2 PRO | Estética Profesional
+]]
 
--- Servicios
+-- Servicios necesarios
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
 local Workspace = game:GetService("Workspace")
 local Camera = Workspace.CurrentCamera
 local StarterGui = game:GetService("StarterGui")
+local GuiService = game:GetService("GuiService")
+local ContextActionService = game:GetService("ContextActionService")
 
--- Jugador local
+-- Datos del jugador
 local LocalPlayer = Players.LocalPlayer
+local PlayerName = LocalPlayer.Name
 local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
 local RootPart = Character:WaitForChild("HumanoidRootPart", 10)
 local Humanoid = Character:WaitForChild("Humanoid", 10)
 
--- Variables generales
+-- Detectar dispositivo
+local DeviceType = "PC / Escritorio"
+local OSName = "Windows / Mac / Linux"
+
+if GuiService:IsTenFootInterface() then
+    DeviceType = "Consola"
+    OSName = "Xbox / PlayStation"
+elseif UserInputService.TouchEnabled and not UserInputService.MouseEnabled then
+    DeviceType = "Móvil / Tableta"
+    OSName = "Android / iOS"
+end
+
+-- Variables de control generales
+local SavedPosition = nil
+local ESP_Enabled = false
+local ESP_Inventory_Enabled = false
+local Aimbot_Enabled = false
+local FOV_Size = 90
+local Speed_Enabled = false
+local Speed_Value = 32
+local InfiniteJump_Enabled = false
+local InstantInteract_Enabled = false
+local ESP_Labels = {}
+local ESP_Lines = {}
+
+-- ✅ Lista de usuarios a IGNORAR
+local IgnoredUsers = {}
+
+-- Interfaz principal
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "BlockSpinEderPanel"
+ScreenGui.Name = "BlockSpinEder_UI"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui", 10)
+ScreenGui.IgnoreGuiInset = true
+ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
-local AimbotActivo = false
-local FOV = 90
-local ApuntarCabeza = true
-local SoloConVision = true -- Controla si apunta solo lo que ves
-local ESPJugadoresActivo = false
-local ESPInventarioActivo = false
-local DatosESP = {}
-local Conexiones = {}
-
--- ==================== INTERFAZ PRINCIPAL ====================
+-- Marco principal ANCHO AUMENTADO
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 420, 0, 650)
-MainFrame.Position = UDim2.new(0.5, -210, 0.5, -325)
-MainFrame.BackgroundColor3 = Color3.fromRGB(20, 22, 28)
+MainFrame.Size = UDim2.new(0, 580, 0, 790) -- Más ancho para que quepa todo
+MainFrame.Position = UDim2.new(0.5, -290, 0.5, -395) -- Centrado nuevo
+MainFrame.BackgroundColor3 = Color3.fromRGB(12, 15, 24)
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
 MainFrame.Draggable = true
+MainFrame.ClipsDescendants = true
 MainFrame.Parent = ScreenGui
-Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 14)
-local BordeMain = Instance.new("UIStroke")
-BordeMain.Thickness = 2
-BordeMain.Color = Color3.fromRGB(85, 180, 255)
-BordeMain.Parent = MainFrame
 
--- Título
-local Titulo = Instance.new("TextLabel")
-Titulo.Size = UDim2.new(1, 0, 0, 60)
-Titulo.BackgroundColor3 = Color3.fromRGB(15, 17, 24)
-Titulo.Text = "💎 BLOCK SPIN EDER PANEL\n👤 TAMBIÉN DE TOCINACIO23021"
-Titulo.TextColor3 = Color3.fromRGB(120, 220, 255)
-Titulo.TextSize = 18
-Titulo.Font = Enum.Font.GothamBold
-Titulo.TextWrapped = true
-Titulo.Parent = MainFrame
-Instance.new("UICorner", Titulo).CornerRadius = UDim.new(0, 14)
+-- Esquinas y borde principal
+local MainCorner = Instance.new("UICorner")
+MainCorner.CornerRadius = UDim.new(0, 20)
+MainCorner.Parent = MainFrame
 
--- Botones Minimizar y Cerrar
-local MinimizarBtn = Instance.new("TextButton")
-MinimizarBtn.Size = UDim2.new(0, 38, 0, 38)
-MinimizarBtn.Position = UDim2.new(1, -85, 0, 11)
-MinimizarBtn.BackgroundColor3 = Color3.fromRGB(255, 180, 0)
-MinimizarBtn.Text = "−"
-MinimizarBtn.TextColor3 = Color3.new(1, 1, 1)
-MinimizarBtn.TextSize = 24
-MinimizarBtn.Font = Enum.Font.GothamBold
-MinimizarBtn.Parent = MainFrame
-Instance.new("UICorner", MinimizarBtn).CornerRadius = UDim.new(0, 8)
+local MainStroke = Instance.new("UIStroke")
+MainStroke.Thickness = 1.8
+MainStroke.Color = Color3.fromRGB(65, 145, 255)
+MainStroke.Transparency = 0.05
+MainStroke.Parent = MainFrame
 
-local CerrarBtn = Instance.new("TextButton")
-CerrarBtn.Size = UDim2.new(0, 38, 0, 38)
-CerrarBtn.Position = UDim2.new(1, -43, 0, 11)
-CerrarBtn.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
-CerrarBtn.Text = "×"
-CerrarBtn.TextColor3 = Color3.new(1, 1, 1)
-CerrarBtn.TextSize = 24
-CerrarBtn.Font = Enum.Font.GothamBold
-CerrarBtn.Parent = MainFrame
-Instance.new("UICorner", CerrarBtn).CornerRadius = UDim.new(0, 8)
+-- Sombra suave
+local Shadow = Instance.new("ImageLabel")
+Shadow.Size = UDim2.new(1, 60, 1, 60)
+Shadow.Position = UDim2.new(0.5, -30, 0.5, -30)
+Shadow.BackgroundTransparency = 1
+Shadow.Image = "rbxassetid://5554264800"
+Shadow.ImageColor3 = Color3.new(0, 0, 0)
+Shadow.ImageTransparency = 0.85
+Shadow.ScaleType = Enum.ScaleType.Slice
+Shadow.SliceCenter = Rect.new(24, 24, 276, 276)
+Shadow.ZIndex = -1
+Shadow.Parent = MainFrame
 
--- Área desplazable
-local Contenido = Instance.new("ScrollingFrame")
-Contenido.Size = UDim2.new(1, -15, 1, -70)
-Contenido.Position = UDim2.new(0, 7, 0, 63)
-Contenido.BackgroundTransparency = 1
-Contenido.ScrollBarThickness = 9
-Contenido.ScrollBarImageColor3 = Color3.fromRGB(85, 180, 255)
-Contenido.CanvasSize = UDim2.new(0, 0, 1500, 0)
-Contenido.Parent = MainFrame
+-- Barra superior
+local TopBar = Instance.new("Frame")
+TopBar.Size = UDim2.new(1, 0, 0, 65)
+TopBar.Position = UDim2.new(0, 0, 0, 0)
+TopBar.BackgroundColor3 = Color3.fromRGB(7, 9, 18)
+TopBar.BorderSizePixel = 0
+TopBar.Parent = MainFrame
 
-local ListaLayout = Instance.new("UIListLayout")
-ListaLayout.Padding = UDim.new(0, 16)
-ListaLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-ListaLayout.SortOrder = Enum.SortOrder.LayoutOrder
-ListaLayout.Parent = Contenido
+local TopCorner = Instance.new("UICorner")
+TopCorner.CornerRadius = UDim.new(0, 20)
+TopCorner.Parent = TopBar
 
-ListaLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-    Contenido.CanvasSize = UDim2.new(0, 0, ListaLayout.AbsoluteContentSize.Y + 40, 0)
+local TopStroke = Instance.new("UIStroke")
+TopStroke.Thickness = 1.2
+TopStroke.Color = Color3.fromRGB(70, 150, 255)
+TopStroke.Transparency = 0.12
+TopStroke.Parent = TopBar
+
+-- TÍTULO AJUSTADO: tamaño de letra menor para que quepa completo
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, -120, 1, 0)
+Title.Position = UDim2.new(0, 25, 0, 0)
+Title.BackgroundTransparency = 1
+Title.Text = "BlockSpinEder EDER2302 • Hecho por TOCINACIO23021" -- Texto completo
+Title.TextColor3 = Color3.fromRGB(100, 205, 255)
+Title.TextSize = 17 -- Tamaño reducido para no cortar
+Title.Font = Enum.Font.GothamBold -- Fuente más compacta
+Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.TextWrapped = false
+Title.Parent = TopBar
+
+-- Animación de color para el título
+task.spawn(function()
+    local h = 0
+    while task.wait(0.03) do
+        h = (h + 0.2) % 360
+        Title.TextColor3 = Color3.fromHSV(h/360, 0.35, 0.95)
+    end
 end)
 
--- Función para crear botones
-local function CrearBoton(Texto)
-    local Boton = Instance.new("TextButton")
-    Boton.Size = UDim2.new(0.92, 0, 0, 50)
-    Boton.BackgroundColor3 = Color3.fromRGB(32, 35, 45)
-    Boton.Text = Texto .. " : OFF"
-    Boton.TextColor3 = Color3.fromRGB(255, 90, 90)
-    Boton.TextSize = 16
-    Boton.Font = Enum.Font.GothamSemibold
-    Boton.AutoButtonColor = false
-    Boton.Parent = Contenido
-    Instance.new("UICorner", Boton).CornerRadius = UDim.new(0, 10)
-    local Borde = Instance.new("UIStroke")
-    Borde.Thickness = 0.8
-    Borde.Color = Color3.fromRGB(60, 70, 90)
-    Borde.Parent = Boton
-    return Boton
+-- Botones de control mejorados
+local MinimizeBtn = Instance.new("TextButton")
+MinimizeBtn.Size = UDim2.new(0, 42, 0, 42)
+MinimizeBtn.Position = UDim2.new(1, -100, 0, 11.5)
+MinimizeBtn.BackgroundColor3 = Color3.fromRGB(255, 185, 30)
+MinimizeBtn.Text = "−"
+MinimizeBtn.TextColor3 = Color3.new(1, 1, 1)
+MinimizeBtn.TextSize = 25
+MinimizeBtn.Font = Enum.Font.GothamBold
+MinimizeBtn.AutoButtonColor = false
+MinimizeBtn.Parent = TopBar
+
+Instance.new("UICorner", MinimizeBtn).CornerRadius = UDim.new(0, 12)
+local MinStroke = Instance.new("UIStroke")
+MinStroke.Thickness = 1
+MinStroke.Color = Color3.fromRGB(255, 210, 80)
+MinStroke.Transparency = 0.2
+MinStroke.Parent = MinimizeBtn
+
+MinimizeBtn.MouseEnter:Connect(function()
+    MinimizeBtn.BackgroundColor3 = Color3.fromRGB(255, 200, 60)
+end)
+MinimizeBtn.MouseLeave:Connect(function()
+    MinimizeBtn.BackgroundColor3 = Color3.fromRGB(255, 185, 30)
+end)
+
+local CloseBtn = Instance.new("TextButton")
+CloseBtn.Size = UDim2.new(0, 42, 0, 42)
+CloseBtn.Position = UDim2.new(1, -55, 0, 11.5)
+CloseBtn.BackgroundColor3 = Color3.fromRGB(225, 45, 45)
+CloseBtn.Text = "×"
+CloseBtn.TextColor3 = Color3.new(1, 1, 1)
+CloseBtn.TextSize = 27
+CloseBtn.Font = Enum.Font.GothamBold
+CloseBtn.AutoButtonColor = false
+CloseBtn.Parent = TopBar
+
+Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(0, 12)
+local CloseStroke = Instance.new("UIStroke")
+CloseStroke.Thickness = 1
+CloseStroke.Color = Color3.fromRGB(255, 85, 85)
+CloseStroke.Transparency = 0.2
+CloseStroke.Parent = CloseBtn
+
+CloseBtn.MouseEnter:Connect(function()
+    CloseBtn.BackgroundColor3 = Color3.fromRGB(245, 65, 65)
+end)
+CloseBtn.MouseLeave:Connect(function()
+    CloseBtn.BackgroundColor3 = Color3.fromRGB(225, 45, 45)
+end)
+
+-- Sección de información renovada
+local InfoFrame = Instance.new("Frame")
+InfoFrame.Size = UDim2.new(0.96, 0, 0, 105)
+InfoFrame.Position = UDim2.new(0.02, 0, 0, 77)
+InfoFrame.BackgroundColor3 = Color3.fromRGB(18, 22, 32)
+InfoFrame.BorderSizePixel = 0
+InfoFrame.Parent = MainFrame
+
+Instance.new("UICorner", InfoFrame).CornerRadius = UDim.new(0, 16)
+local InfoStroke = Instance.new("UIStroke")
+InfoStroke.Thickness = 1.2
+InfoStroke.Color = Color3.fromRGB(75, 135, 235)
+InfoStroke.Transparency = 0.2
+InfoStroke.Parent = InfoFrame
+
+local InfoTitle = Instance.new("TextLabel")
+InfoTitle.Size = UDim2.new(1, -20, 0, 28)
+InfoTitle.Position = UDim2.new(0, 12, 0, 8)
+InfoTitle.BackgroundTransparency = 1
+InfoTitle.Text = "📋 INFORMACIÓN DEL SISTEMA"
+InfoTitle.TextColor3 = Color3.fromRGB(115, 185, 255)
+InfoTitle.TextSize = 16
+InfoTitle.Font = Enum.Font.GothamBold
+InfoTitle.TextXAlignment = Enum.TextXAlignment.Left
+InfoTitle.Parent = InfoFrame
+
+local UserInfo = Instance.new("TextLabel")
+UserInfo.Size = UDim2.new(1, -20, 0, 26)
+UserInfo.Position = UDim2.new(0, 12, 0, 36)
+UserInfo.BackgroundTransparency = 1
+UserInfo.Text = string.format("👤 Usuario: %s", PlayerName)
+UserInfo.TextColor3 = Color3.fromRGB(240, 240, 240)
+UserInfo.TextSize = 14
+UserInfo.Font = Enum.Font.GothamSemibold
+UserInfo.TextXAlignment = Enum.TextXAlignment.Left
+UserInfo.Parent = InfoFrame
+
+local DeviceInfo = Instance.new("TextLabel")
+DeviceInfo.Size = UDim2.new(1, -20, 0, 26)
+DeviceInfo.Position = UDim2.new(0, 12, 0, 62)
+DeviceInfo.BackgroundTransparency = 1
+DeviceInfo.Text = string.format("📱 Dispositivo: %s | %s", DeviceType, OSName)
+DeviceInfo.TextColor3 = Color3.fromRGB(240, 240, 240)
+DeviceInfo.TextSize = 14
+DeviceInfo.Font = Enum.Font.GothamSemibold
+DeviceInfo.TextXAlignment = Enum.TextXAlignment.Left
+DeviceInfo.Parent = InfoFrame
+
+-- Contenido desplazable
+local ContentFrame = Instance.new("ScrollingFrame")
+ContentFrame.Size = UDim2.new(0.96, 0, 0, 565)
+ContentFrame.Position = UDim2.new(0.02, 0, 0, 187)
+ContentFrame.BackgroundTransparency = 1
+ContentFrame.ScrollBarThickness = 6
+ContentFrame.ScrollBarImageColor3 = Color3.fromRGB(80, 170, 255)
+ContentFrame.ScrollBarImageTransparency = 0.18
+ContentFrame.Parent = MainFrame
+
+local Layout = Instance.new("UIListLayout")
+Layout.Padding = UDim.new(0, 20)
+Layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+Layout.Parent = ContentFrame
+
+Layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+    ContentFrame.CanvasSize = UDim2.new(0, 0, Layout.AbsoluteContentSize.Y + 25, 0)
+end)
+
+-- ✅ CAMPO: Usuarios a ignorar (mejorado)
+local IgnoreFrame = Instance.new("Frame")
+IgnoreFrame.Size = UDim2.new(0.98, 0, 0, 70)
+IgnoreFrame.BackgroundColor3 = Color3.fromRGB(25, 30, 42)
+IgnoreFrame.BorderSizePixel = 0
+IgnoreFrame.Parent = ContentFrame
+
+Instance.new("UICorner", IgnoreFrame).CornerRadius = UDim.new(0, 13)
+local IgnoreStroke = Instance.new("UIStroke")
+IgnoreStroke.Thickness = 1.2
+IgnoreStroke.Color = Color3.fromRGB(60, 70, 95)
+IgnoreStroke.Transparency = 0.18
+IgnoreStroke.Parent = IgnoreFrame
+
+local IgnoreLabel = Instance.new("TextLabel")
+IgnoreLabel.Size = UDim2.new(0.32, 0, 1, 0)
+IgnoreLabel.Position = UDim2.new(0.05, 0, 0, 0)
+IgnoreLabel.BackgroundTransparency = 1
+IgnoreLabel.Text = "🚫 Ignorar usuarios:"
+IgnoreLabel.TextColor3 = Color3.fromRGB(255, 110, 110)
+IgnoreLabel.TextSize = 15.5
+IgnoreLabel.Font = Enum.Font.GothamBold
+IgnoreLabel.TextXAlignment = Enum.TextXAlignment.Left
+IgnoreLabel.Parent = IgnoreFrame
+
+local IgnoreInput = Instance.new("TextBox")
+IgnoreInput.Size = UDim2.new(0.43, 0, 0, 40)
+IgnoreInput.Position = UDim2.new(0.37, 0, 0, 15)
+IgnoreInput.BackgroundColor3 = Color3.fromRGB(16, 20, 32)
+IgnoreInput.PlaceholderText = "ej: usuario1, usuario2, usuario3"
+IgnoreInput.Text = ""
+IgnoreInput.TextColor3 = Color3.new(1, 1, 1)
+IgnoreInput.TextSize = 14.5
+IgnoreInput.Font = Enum.Font.GothamSemibold
+IgnoreInput.TextXAlignment = Enum.TextXAlignment.Center
+IgnoreInput.ClearTextOnFocus = false
+IgnoreInput.Parent = IgnoreFrame
+
+Instance.new("UICorner", IgnoreInput).CornerRadius = UDim.new(0, 9)
+local InputStroke = Instance.new("UIStroke")
+InputStroke.Thickness = 1
+InputStroke.Color = Color3.fromRGB(70, 90, 130)
+InputStroke.Transparency = 0.25
+InputStroke.Parent = IgnoreInput
+
+-- ✅ BOTÓN NUEVO: Borrar lista de ignorados (decorado)
+local ClearIgnoreBtn = Instance.new("TextButton")
+ClearIgnoreBtn.Size = UDim2.new(0.18, 0, 0, 40)
+ClearIgnoreBtn.Position = UDim2.new(0.82, 0, 0, 15)
+ClearIgnoreBtn.BackgroundColor3 = Color3.fromRGB(210, 55, 55)
+ClearIgnoreBtn.Text = "🗑️ Borrar"
+ClearIgnoreBtn.TextColor3 = Color3.new(1, 1, 1)
+ClearIgnoreBtn.TextSize = 14
+ClearIgnoreBtn.Font = Enum.Font.GothamBold
+ClearIgnoreBtn.AutoButtonColor = false
+ClearIgnoreBtn.Parent = IgnoreFrame
+
+Instance.new("UICorner", ClearIgnoreBtn).CornerRadius = UDim.new(0, 9)
+local ClearStroke = Instance.new("UIStroke")
+ClearStroke.Thickness = 1
+ClearStroke.Color = Color3.fromRGB(255, 90, 90)
+ClearStroke.Transparency = 0.2
+ClearStroke.Parent = ClearIgnoreBtn
+
+ClearIgnoreBtn.MouseEnter:Connect(function()
+    ClearIgnoreBtn.BackgroundColor3 = Color3.fromRGB(235, 70, 70)
+end)
+ClearIgnoreBtn.MouseLeave:Connect(function()
+    ClearIgnoreBtn.BackgroundColor3 = Color3.fromRGB(210, 55, 55)
+end)
+
+-- Función para actualizar la lista de ignorados
+local function UpdateIgnoredList(texto)
+    IgnoredUsers = {}
+    for usuario in texto:gmatch("[^,]+") do
+        usuario = usuario:gsub("^%s*(.-)%s*$", "%1"):lower()
+        if usuario ~= "" then
+            IgnoredUsers[usuario] = true
+        end
+    end
 end
 
--- ==================== AIMBOT (CORREGIDO) ====================
-local MarcoAimbot = Instance.new("Frame")
-MarcoAimbot.Size = UDim2.new(0.92, 0, 0, 160)
-MarcoAimbot.BackgroundColor3 = Color3.fromRGB(32, 35, 45)
-MarcoAimbot.Parent = Contenido
-Instance.new("UICorner", MarcoAimbot).CornerRadius = UDim.new(0, 10)
-local BordeMarco = Instance.new("UIStroke")
-BordeMarco.Thickness = 0.8
-BordeMarco.Color = Color3.fromRGB(60, 70, 90)
-BordeMarco.Parent = MarcoAimbot
-
--- Círculo FOV
-local CirculoFOV = Instance.new("Frame")
-CirculoFOV.AnchorPoint = Vector2.new(0.5, 0.5)
-CirculoFOV.Position = UDim2.new(0.5, 0, 0.5, 0)
-CirculoFOV.Size = UDim2.new(0, FOV * 2, 0, FOV * 2)
-CirculoFOV.BackgroundTransparency = 1
-CirculoFOV.BorderSizePixel = 0
-CirculoFOV.Visible = false
-CirculoFOV.Parent = ScreenGui
-Instance.new("UICorner", CirculoFOV).CornerRadius = UDim.new(1, 0)
-local BordeFOV = Instance.new("UIStroke")
-BordeFOV.Thickness = 2
-BordeFOV.Color = Color3.fromRGB(255, 60, 60)
-BordeFOV.Transparency = 0.2
-BordeFOV.Parent = CirculoFOV
-
-local AimbotBtn = CrearBoton("Aimbot")
-AimbotBtn.Size = UDim2.new(0.45, 0, 0, 35)
-AimbotBtn.Position = UDim2.new(0.03, 0, 0, 8)
-AimbotBtn.Parent = MarcoAimbot
-
-local CajaFOV = Instance.new("TextBox")
-CajaFOV.Size = UDim2.new(0.45, 0, 0, 35)
-CajaFOV.Position = UDim2.new(0.52, 0, 0, 8)
-CajaFOV.BackgroundColor3 = Color3.fromRGB(25, 28, 38)
-CajaFOV.Text = tostring(FOV)
-CajaFOV.TextColor3 = Color3.new(1, 1, 1)
-CajaFOV.TextSize = 16
-CajaFOV.Font = Enum.Font.GothamSemibold
-CajaFOV.Parent = MarcoAimbot
-Instance.new("UICorner", CajaFOV).CornerRadius = UDim.new(0, 8)
-
-local ApuntarParteBtn = Instance.new("TextButton")
-ApuntarParteBtn.Size = UDim2.new(0.94, 0, 0, 35)
-ApuntarParteBtn.Position = UDim2.new(0.03, 0, 0, 50)
-ApuntarParteBtn.BackgroundColor3 = Color3.fromRGB(38, 42, 55)
-ApuntarParteBtn.Text = "🎯 Apuntar: Cabeza"
-ApuntarParteBtn.TextColor3 = Color3.fromRGB(255, 200, 100)
-ApuntarParteBtn.TextSize = 15
-ApuntarParteBtn.Font = Enum.Font.GothamSemibold
-ApuntarParteBtn.Parent = MarcoAimbot
-Instance.new("UICorner", ApuntarParteBtn).CornerRadius = UDim.new(0, 8)
-
--- Opción Solo con visión
-local SoloVisionBtn = Instance.new("TextButton")
-SoloVisionBtn.Size = UDim2.new(0.94, 0, 0, 35)
-SoloVisionBtn.Position = UDim2.new(0.03, 0, 0, 92)
-SoloVisionBtn.BackgroundColor3 = Color3.fromRGB(38, 42, 55)
-SoloVisionBtn.Text = "👁️ Solo con visión: ON"
-SoloVisionBtn.TextColor3 = Color3.fromRGB(80, 255, 120)
-SoloVisionBtn.TextSize = 15
-SoloVisionBtn.Font = Enum.Font.GothamSemibold
-SoloVisionBtn.Parent = MarcoAimbot
-Instance.new("UICorner", SoloVisionBtn).CornerRadius = UDim.new(0, 8)
-
-CajaFOV.FocusLost:Connect(function()
-    FOV = math.clamp(tonumber(CajaFOV.Text) or 90, 10, 500)
-    CirculoFOV.Size = UDim2.new(0, FOV * 2, 0, FOV * 2)
+IgnoreInput.FocusLost:Connect(function()
+    UpdateIgnoredList(IgnoreInput.Text)
+    Notify("Lista actualizada", #IgnoreInput.Text > 0 and "Se ignorarán los usuarios indicados" or "Sin usuarios a ignorar")
 end)
 
-ApuntarParteBtn.MouseButton1Click:Connect(function()
-    ApuntarCabeza = not ApuntarCabeza
-    ApuntarParteBtn.Text = ApuntarCabeza and "🎯 Apuntar: Cabeza" or "🎯 Apuntar: Pecho"
+-- Acción del botón borrar
+ClearIgnoreBtn.MouseButton1Click:Connect(function()
+    IgnoreInput.Text = ""
+    UpdateIgnoredList("")
+    Notify("Lista limpiada", "Todos los usuarios fueron eliminados de la lista")
 end)
 
-SoloVisionBtn.MouseButton1Click:Connect(function()
-    SoloConVision = not SoloConVision
-    SoloVisionBtn.Text = SoloConVision and "👁️ Solo con visión: ON" or "👁️ Solo con visión: OFF"
-    SoloVisionBtn.TextColor3 = SoloConVision and Color3.fromRGB(80, 255, 120) or Color3.fromRGB(255, 90, 90)
+-- Función auxiliar: ¿El usuario está en la lista de ignorados?
+local function IsIgnored(playerName)
+    return IgnoredUsers[playerName:lower()] == true
+end
+
+-- Función para notificaciones
+local function Notify(Title, Message)
+    StarterGui:SetCore("SendNotification", {
+        Title = Title,
+        Text = Message,
+        Duration = 3.5
+    })
+end
+
+-- Función para crear botones (rediseñados)
+local function CreateButton(Name, Color)
+    local Button = Instance.new("TextButton")
+    Button.Size = UDim2.new(0.98, 0, 0, 54)
+    Button.BackgroundColor3 = Color3.fromRGB(26, 31, 44)
+    Button.Text = string.format("%s : OFF", Name)
+    Button.TextColor3 = Color or Color3.fromRGB(225, 225, 225)
+    Button.TextSize = 15.8
+    Button.Font = Enum.Font.GothamBold
+    Button.AutoButtonColor = false
+    Button.Parent = ContentFrame
+
+    Instance.new("UICorner", Button).CornerRadius = UDim.new(0, 13)
+    local BtnStroke = Instance.new("UIStroke")
+    BtnStroke.Thickness = 1.2
+    BtnStroke.Color = Color3.fromRGB(55, 65, 90)
+    BtnStroke.Transparency = 0.2
+    BtnStroke.Parent = Button
+
+    Button.MouseEnter:Connect(function()
+        Button.BackgroundColor3 = Color3.fromRGB(34, 39, 54)
+    end)
+    Button.MouseLeave:Connect(function()
+        Button.BackgroundColor3 = Color3.fromRGB(26, 31, 44)
+    end)
+
+    return Button
+end
+
+-- Minimizar / Cerrar
+MinimizeBtn.MouseButton1Click:Connect(function()
+    if ContentFrame.Visible then
+        ContentFrame.Visible = false
+        InfoFrame.Visible = false
+        MainFrame.Size = UDim2.new(0, 580, 0, 65)
+        MinimizeBtn.Text = "+"
+    else
+        ContentFrame.Visible = true
+        InfoFrame.Visible = true
+        MainFrame.Size = UDim2.new(0, 580, 0, 790)
+        MinimizeBtn.Text = "−"
+    end
+end)
+
+CloseBtn.MouseButton1Click:Connect(function()
+    ScreenGui:Destroy()
+    RunService:UnbindFromRenderStep("ESP_Jugadores")
+    RunService:UnbindFromRenderStep("ESP_Inventario")
+    RunService:UnbindFromRenderStep("Aimbot")
+    RunService:UnbindFromRenderStep("SpeedPower")
+    ContextActionService:UnbindAction("InfiniteJump")
+    Notify("Panel", "Cerrado correctamente")
+end)
+
+-- Guardar posición
+local SavePosBtn = CreateButton("Guardar Posición", Color3.fromRGB(255, 205, 70))
+SavePosBtn.MouseButton1Click:Connect(function()
+    SavedPosition = RootPart.CFrame
+    SavePosBtn.Text = "Guardar Posición : ✅ Guardada"
+    SavePosBtn.BackgroundColor3 = Color3.fromRGB(32, 52, 42)
+    Notify("Posición", "Posición actual guardada")
+    task.wait(2)
+    SavePosBtn.Text = "Guardar Posición : OFF"
+    SavePosBtn.BackgroundColor3 = Color3.fromRGB(26, 31, 44)
+end)
+
+-- Teletransporte instantáneo
+local TeleportInstantBtn = CreateButton("Teletransporte Instantáneo", Color3.fromRGB(85, 175, 255))
+TeleportInstantBtn.MouseButton1Click:Connect(function()
+    if SavedPosition and RootPart then
+        RootPart.CFrame = SavedPosition
+        TeleportInstantBtn.Text = "Teletransporte : ✅ Activado"
+        TeleportInstantBtn.BackgroundColor3 = Color3.fromRGB(32, 42, 58)
+        Notify("Teletransporte", "Posición cargada")
+        task.wait(1)
+        TeleportInstantBtn.Text = "Teletransporte : OFF"
+        TeleportInstantBtn.BackgroundColor3 = Color3.fromRGB(26, 31, 44)
+    else
+        Notify("Aviso", "Primero guarda una posición")
+    end
+end)
+
+-- Teletransporte suave
+local TeleportSmoothBtn = CreateButton("Teletransporte Suave", Color3.fromRGB(115, 235, 135))
+TeleportSmoothBtn.MouseButton1Click:Connect(function()
+    if SavedPosition and RootPart then
+        local Tween = TweenService:Create(RootPart, TweenInfo.new(1.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {CFrame = SavedPosition})
+        Tween:Play()
+        TeleportSmoothBtn.Text = "Teletransporte : ✅ En curso"
+        TeleportSmoothBtn.BackgroundColor3 = Color3.fromRGB(32, 52, 42)
+        Notify("Teletransporte", "Moviendo personaje...")
+        task.wait(1.5)
+        TeleportSmoothBtn.Text = "Teletransporte : OFF"
+        TeleportSmoothBtn.BackgroundColor3 = Color3.fromRGB(26, 31, 44)
+    else
+        Notify("Aviso", "Primero guarda una posición")
+    end
+end)
+
+-- Speed Power
+local SpeedBtn = CreateButton("Speed Power", Color3.fromRGB(255, 145, 65))
+local SpeedFrame = Instance.new("Frame")
+SpeedFrame.Size = UDim2.new(0.98, 0, 0, 58)
+SpeedFrame.BackgroundColor3 = Color3.fromRGB(26, 31, 44)
+SpeedFrame.BorderSizePixel = 0
+SpeedFrame.Parent = ContentFrame
+
+Instance.new("UICorner", SpeedFrame).CornerRadius = UDim.new(0, 13)
+local SpeedStroke = Instance.new("UIStroke")
+SpeedStroke.Thickness = 1.2
+SpeedStroke.Color = Color3.fromRGB(55, 65, 90)
+SpeedStroke.Transparency = 0.2
+SpeedStroke.Parent = SpeedFrame
+
+local SpeedLabel = Instance.new("TextLabel")
+SpeedLabel.Size = UDim2.new(0.55, 0, 1, 0)
+SpeedLabel.Position = UDim2.new(0.05, 0, 0, 0)
+SpeedLabel.BackgroundTransparency = 1
+SpeedLabel.Text = "⚡ Velocidad de movimiento:"
+SpeedLabel.TextColor3 = Color3.new(1, 1, 1)
+SpeedLabel.TextSize = 15.5
+SpeedLabel.Font = Enum.Font.GothamBold
+SpeedLabel.TextXAlignment = Enum.TextXAlignment.Left
+SpeedLabel.Parent = SpeedFrame
+
+local SpeedInput = Instance.new("TextBox")
+SpeedInput.Size = UDim2.new(0.35, 0, 0, 40)
+SpeedInput.Position = UDim2.new(0.60, 0, 0, 9)
+SpeedInput.BackgroundColor3 = Color3.fromRGB(16, 20, 32)
+SpeedInput.Text = tostring(Speed_Value)
+SpeedInput.TextColor3 = Color3.new(1, 1, 1)
+SpeedInput.TextSize = 16
+SpeedInput.Font = Enum.Font.GothamBold
+SpeedInput.TextXAlignment = Enum.TextXAlignment.Center
+SpeedInput.ClearTextOnFocus = false
+SpeedInput.Parent = SpeedFrame
+
+Instance.new("UICorner", SpeedInput).CornerRadius = UDim.new(0, 9)
+local SpeedInputStroke = Instance.new("UIStroke")
+SpeedInputStroke.Thickness = 1
+SpeedInputStroke.Color = Color3.fromRGB(70, 90, 130)
+SpeedInputStroke.Transparency = 0.25
+SpeedInputStroke.Parent = SpeedInput
+
+SpeedInput.FocusLost:Connect(function()
+    local NewSpeed = tonumber(SpeedInput.Text) or 32
+    Speed_Value = math.clamp(NewSpeed, 16, 500)
+    SpeedInput.Text = tostring(Speed_Value)
+    if Speed_Enabled and Humanoid then
+        Humanoid.WalkSpeed = Speed_Value
+    end
+end)
+
+SpeedBtn.MouseButton1Click:Connect(function()
+    Speed_Enabled = not Speed_Enabled
+    if Speed_Enabled then
+        SpeedBtn.Text = "Speed Power : ✅ Activado"
+        SpeedBtn.TextColor3 = Color3.fromRGB(255, 215, 75)
+        SpeedBtn.BackgroundColor3 = Color3.fromRGB(52, 42, 32)
+        if Humanoid then Humanoid.WalkSpeed = Speed_Value end
+        Notify("Velocidad", "Modo velocidad activado")
+    else
+        SpeedBtn.Text = "Speed Power : OFF"
+        SpeedBtn.TextColor3 = Color3.fromRGB(255, 145, 65)
+        SpeedBtn.BackgroundColor3 = Color3.fromRGB(26, 31, 44)
+        if Humanoid then Humanoid.WalkSpeed = 16 end
+        Notify("Velocidad", "Velocidad normal restaurada")
+    end
+end)
+
+-- Salto Infinito
+local InfiniteJumpBtn = CreateButton("Salto Infinito", Color3.fromRGB(185, 95, 255))
+InfiniteJumpBtn.MouseButton1Click:Connect(function()
+    InfiniteJump_Enabled = not InfiniteJump_Enabled
+    if InfiniteJump_Enabled then
+        InfiniteJumpBtn.Text = "Salto Infinito : ✅ Activado"
+        InfiniteJumpBtn.TextColor3 = Color3.fromRGB(225, 165, 255)
+        InfiniteJumpBtn.BackgroundColor3 = Color3.fromRGB(47, 32, 57)
+        ContextActionService:BindAction("InfiniteJump", function(_, state)
+            if state == Enum.UserInputState.Begin and InfiniteJump_Enabled and Humanoid and Humanoid:GetState() ~= Enum.HumanoidStateType.Dead then
+                Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+            end
+        end, true, Enum.KeyCode.Space)
+        Notify("Salto", "Salto infinito activado")
+    else
+        InfiniteJumpBtn.Text = "Salto Infinito : OFF"
+        InfiniteJumpBtn.TextColor3 = Color3.fromRGB(185, 95, 255)
+        InfiniteJumpBtn.BackgroundColor3 = Color3.fromRGB(26, 31, 44)
+        ContextActionService:UnbindAction("InfiniteJump")
+        Notify("Salto", "Salto normal restaurado")
+    end
+end)
+
+-- Interacción Instantánea
+local InstantInteractBtn = CreateButton("Interacción Instantánea", Color3.fromRGB(75, 205, 255))
+InstantInteractBtn.MouseButton1Click:Connect(function()
+    InstantInteract_Enabled = not InstantInteract_Enabled
+    if InstantInteract_Enabled then
+        InstantInteractBtn.Text = "Interacción : ✅ Activada"
+        InstantInteractBtn.TextColor3 = Color3.fromRGB(125, 235, 255)
+        InstantInteractBtn.BackgroundColor3 = Color3.fromRGB(32, 47, 57)
+        RunService:BindToRenderStep("InstantInteract", 203, function()
+            if Humanoid and Humanoid.Health > 0 then
+                Humanoid.InteractDelay = 0
+            end
+        end)
+        Notify("Interacción", "Interacción rápida activada")
+    else
+        InstantInteractBtn.Text = "Interacción : OFF"
+        InstantInteractBtn.TextColor3 = Color3.fromRGB(75, 205, 255)
+        InstantInteractBtn.BackgroundColor3 = Color3.fromRGB(26, 31, 44)
+        RunService:UnbindFromRenderStep("InstantInteract")
+        if Humanoid then Humanoid.InteractDelay = 1 end
+        Notify("Interacción", "Interacción normal restaurada")
+    end
+end)
+
+-- ✅ ESP JUGADORES (IGNORA los de la lista)
+local ESP_Players_Btn = CreateButton("ESP Jugadores", Color3.fromRGB(255, 85, 85))
+ESP_Players_Btn.MouseButton1Click:Connect(function()
+    ESP_Enabled = not ESP_Enabled
+    if ESP_Enabled then
+        ESP_Players_Btn.Text = "ESP Jugadores : ✅ Activado"
+        ESP_Players_Btn.TextColor3 = Color3.fromRGB(75, 245, 115)
+        ESP_Players_Btn.BackgroundColor3 = Color3.fromRGB(32, 52, 42)
+        Notify("ESP", "Visualización de jugadores activada")
+
+        RunService:BindToRenderStep("ESP_Jugadores", 200, function()
+            for _, Obj in pairs(ESP_Labels) do Obj:Destroy() end
+            for _, Line in pairs(ESP_Lines) do Line:Remove() end
+            ESP_Labels = {}
+            ESP_Lines = {}
+
+            for _, Player in ipairs(Players:GetPlayers()) do
+                if Player ~= LocalPlayer and Player.Character and not IsIgnored(Player.Name) then
+                    local Hum = Player.Character:FindFirstChild("Humanoid")
+                    local Root = Player.Character:FindFirstChild("HumanoidRootPart")
+                    local Head = Player.Character:FindFirstChild("Head")
+                    if Hum and Root and Head and Hum.Health > 0 then
+                        local Pos3D = Head.Position + Vector3.new(0, 1.6, 0)
+                        local Distance = math.floor((Root.Position - RootPart.Position).Magnitude)
+                        local ScreenPos, Visible = Camera:WorldToViewportPoint(Pos3D)
+
+                        if Visible then
+                            local HealthColor = Hum.Health > 70 and Color3.fromRGB(75, 245, 115) or Hum.Health > 30 and Color3.fromRGB(255, 205, 0) or Color3.fromRGB(255, 65, 65)
+
+                            local InfoLabel = Instance.new("TextLabel")
+                            InfoLabel.Size = UDim2.new(0, 250, 0, 75)
+                            InfoLabel.Position = UDim2.new(0, ScreenPos.X, 0, ScreenPos.Y)
+                            InfoLabel.AnchorPoint = Vector2.new(0.5, 0.5)
+                            InfoLabel.BackgroundTransparency = 1
+                            InfoLabel.Text = string.format("👤 %s\n❤️ Vida: %.0f/%.0f\n📏 Distancia: %d m", Player.Name, Hum.Health, Hum.MaxHealth, Distance)
+                            InfoLabel.TextColor3 = HealthColor
+                            InfoLabel.TextStrokeTransparency = 0.08
+                            InfoLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
+                            InfoLabel.TextSize = 14.5
+                            InfoLabel.Font = Enum.Font.GothamBold
+                            InfoLabel.Parent = ScreenGui
+                            ESP_Labels["esp_"..Player.UserId] = InfoLabel
+
+                            local Line = Drawing.new("Line")
+                            Line.Visible = true
+                            Line.From = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+                            Line.To = Vector2.new(ScreenPos.X, ScreenPos.Y)
+                            Line.Color = HealthColor
+                            Line.Thickness = 2.2
+                            Line.Transparency = 0.75
+                            ESP_Lines[Player.UserId] = Line
+                        end
+                    end
+                end
+            end
+        end)
+    else
+        ESP_Players_Btn.Text = "ESP Jugadores : OFF"
+        ESP_Players_Btn.TextColor3 = Color3.fromRGB(255, 85, 85)
+        ESP_Players_Btn.BackgroundColor3 = Color3.fromRGB(26, 31, 44)
+        Notify("ESP", "Visualización desactivada")
+        RunService:UnbindFromRenderStep("ESP_Jugadores")
+        for _, Obj in pairs(ESP_Labels) do Obj:Destroy() end
+        for _, Line in pairs(ESP_Lines) do Line:Remove() end
+        ESP_Labels = {}
+        ESP_Lines = {}
+    end
+end)
+
+-- ✅ ESP INVENTARIO (IGNORA los de la lista)
+local ESP_Inventory_Btn = CreateButton("ESP Inventario", Color3.fromRGB(255, 85, 85))
+ESP_Inventory_Btn.MouseButton1Click:Connect(function()
+    ESP_Inventory_Enabled = not ESP_Inventory_Enabled
+    if ESP_Inventory_Enabled then
+        ESP_Inventory_Btn.Text = "ESP Inventario : ✅ Activado"
+        ESP_Inventory_Btn.TextColor3 = Color3.fromRGB(75, 245, 115)
+        ESP_Inventory_Btn.BackgroundColor3 = Color3.fromRGB(32, 52, 42)
+        Notify("ESP Inventario", "Visualización de objetos activada")
+
+        RunService:BindToRenderStep("ESP_Inventario", 201, function()
+            for Key, Obj in pairs(ESP_Labels) do
+                if Key:match("^inv_") then
+                    Obj:Destroy()
+                    ESP_Labels[Key] = nil
+                end
+            end
+
+            for _, Player in ipairs(Players:GetPlayers()) do
+                if Player ~= LocalPlayer and Player.Character and not IsIgnored(Player.Name) then
+                    local Hum = Player.Character:FindFirstChild("Humanoid")
+                    local Head = Player.Character:FindFirstChild("Head")
+                    if Hum and Head and Hum.Health > 0 then
+                        local Pos3D = Head.Position + Vector3.new(0, 3.2, 0)
+                        local ScreenPos, Visible = Camera:WorldToViewportPoint(Pos3D)
+
+                        if Visible then
+                            local Items = {}
+                            for _, Tool in ipairs(Player.Backpack:GetChildren()) do
+                                if Tool:IsA("Tool") then
+                                    table.insert(Items, "• "..Tool.Name)
+                                end
+                            end
+                            if Hum:FindFirstChildOfClass("Tool") then
+                                table.insert(Items, "✅ En mano: "..Hum.Tool.Name)
+                            end
+                            local ItemsText = #Items > 0 and table.concat(Items, "\n") or "Sin objetos"
+
+                            local InvLabel = Instance.new("TextLabel")
+                            InvLabel.Size = UDim2.new(0, 270, 0, 105)
+                            InvLabel.Position = UDim2.new(0, ScreenPos.X, 0, ScreenPos.Y)
+                            InvLabel.AnchorPoint = Vector2.new(0.5, 0.5)
+                            InvLabel.BackgroundTransparency = 1
+                            InvLabel.Text = string.format("🎒 Inventario de %s:\n%s", Player.Name, ItemsText)
+                            InvLabel.TextColor3 = Color3.fromRGB(115, 245, 215)
+                            InvLabel.TextStrokeTransparency = 0.08
+                            InvLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
+                            InvLabel.TextSize = 13
+                            InvLabel.Font = Enum.Font.GothamSemibold
+                            InvLabel.TextWrapped = true
+                            InvLabel.Parent = ScreenGui
+                            ESP_Labels["inv_"..Player.UserId] = InvLabel
+                        end
+                    end
+                end
+            end
+        end)
+    else
+        ESP_Inventory_Btn.Text = "ESP Inventario : OFF"
+        ESP_Inventory_Btn.TextColor3 = Color3.fromRGB(255, 85, 85)
+        ESP_Inventory_Btn.BackgroundColor3 = Color3.fromRGB(26, 31, 44)
+        Notify("ESP Inventario", "Visualización desactivada")
+        RunService:UnbindFromRenderStep("ESP_Inventario")
+        for Key, Obj in pairs(ESP_Labels) do
+            if Key:match("^inv_") then
+                Obj:Destroy()
+                ESP_Labels[Key] = nil
+            end
+        end
+    end
+end)
+
+-- ✅ AIMBOT (IGNORA los de la lista)
+local AimbotBtn = CreateButton("Aimbot", Color3.fromRGB(255, 85, 85))
+local FOV_Circle = Instance.new("Frame")
+FOV_Circle.Size = UDim2.new(0, FOV_Size * 2, 0, FOV_Size * 2)
+FOV_Circle.Position = UDim2.new(0.5, 0, 0.5, 0)
+FOV_Circle.AnchorPoint = Vector2.new(0.5, 0.5)
+FOV_Circle.BackgroundTransparency = 1
+FOV_Circle.Visible = false
+FOV_Circle.Parent = ScreenGui
+
+Instance.new("UICorner", FOV_Circle).CornerRadius = UDim.new(1, 0)
+local FOV_Stroke = Instance.new("UIStroke")
+FOV_Stroke.Thickness = 3
+FOV_Stroke.Color = Color3.fromRGB(255, 55, 55)
+FOV_Stroke.Parent = FOV_Circle
+
+local FOV_Frame = Instance.new("Frame")
+FOV_Frame.Size = UDim2.new(0.98, 0, 0, 58)
+FOV_Frame.BackgroundColor3 = Color3.fromRGB(26, 31, 44)
+FOV_Frame.BorderSizePixel = 0
+FOV_Frame.Parent = ContentFrame
+
+Instance.new("UICorner", FOV_Frame).CornerRadius = UDim.new(0, 13)
+local FOV_FrameStroke = Instance.new("UIStroke")
+FOV_FrameStroke.Thickness = 1.2
+FOV_FrameStroke.Color = Color3.fromRGB(55, 65, 90)
+FOV_FrameStroke.Transparency = 0.2
+FOV_FrameStroke.Parent = FOV_Frame
+
+local FOV_Label = Instance.new("TextLabel")
+FOV_Label.Size = UDim2.new(0.55, 0, 1, 0)
+FOV_Label.Position = UDim2.new(0.05, 0, 0, 0)
+FOV_Label.BackgroundTransparency = 1
+FOV_Label.Text = "🔘 Tamaño de mira (FOV):"
+FOV_Label.TextColor3 = Color3.new(1, 1, 1)
+FOV_Label.TextSize = 15.5
+FOV_Label.Font = Enum.Font.GothamBold
+FOV_Label.TextXAlignment = Enum.TextXAlignment.Left
+FOV_Label.Parent = FOV_Frame
+
+local FOV_Input = Instance.new("TextBox")
+FOV_Input.Size = UDim2.new(0.35, 0, 0, 40)
+FOV_Input.Position = UDim2.new(0.60, 0, 0, 9)
+FOV_Input.BackgroundColor3 = Color3.fromRGB(16, 20, 32)
+FOV_Input.Text = tostring(FOV_Size)
+FOV_Input.TextColor3 = Color3.new(1, 1, 1)
+FOV_Input.TextSize = 16
+FOV_Input.Font = Enum.Font.GothamBold
+FOV_Input.TextXAlignment = Enum.TextXAlignment.Center
+FOV_Input.ClearTextOnFocus = false
+FOV_Input.Parent = FOV_Frame
+
+Instance.new("UICorner", FOV_Input).CornerRadius = UDim.new(0, 9)
+local FOV_InputStroke = Instance.new("UIStroke")
+FOV_InputStroke.Thickness = 1
+FOV_InputStroke.Color = Color3.fromRGB(70, 90, 130)
+FOV_InputStroke.Transparency = 0.25
+FOV_InputStroke.Parent = FOV_Input
+
+FOV_Input.FocusLost:Connect(function()
+    local NewValue = tonumber(FOV_Input.Text) or 90
+    FOV_Size = math.clamp(NewValue, 20, 500)
+    FOV_Input.Text = tostring(FOV_Size)
+    FOV_Circle.Size = UDim2.new(0, FOV_Size * 2, 0, FOV_Size * 2)
+end)
+
+task.spawn(function()
+    local Colors = {
+        Color3.fromRGB(255, 55, 55),
+        Color3.fromRGB(55, 245, 115),
+        Color3.fromRGB(55, 135, 255),
+        Color3.fromRGB(255, 205, 55),
+        Color3.fromRGB(225, 55, 255),
+        Color3.fromRGB(255, 95, 55)
+    }
+    local Index = 1
+    while task.wait(0.2) do
+        if FOV_Circle.Visible then
+            FOV_Stroke.Color = Colors[Index]
+            Index = Index % #Colors + 1
+        end
+    end
 end)
 
 AimbotBtn.MouseButton1Click:Connect(function()
-    AimbotActivo = not AimbotActivo
-    CirculoFOV.Visible = AimbotActivo
-    AimbotBtn.Text = AimbotActivo and "Aimbot : ON" or "Aimbot : OFF"
-    AimbotBtn.TextColor3 = AimbotActivo and Color3.fromRGB(80, 255, 120) or Color3.fromRGB(255, 90, 90)
-end)
+    Aimbot_Enabled = not Aimbot_Enabled
+    if Aimbot_Enabled then
+        AimbotBtn.Text = "Aimbot : ✅ Activado"
+        AimbotBtn.TextColor3 = Color3.fromRGB(75, 245, 115)
+        AimbotBtn.BackgroundColor3 = Color3.fromRGB(32, 52, 42)
+        FOV_Circle.Visible = true
+        Notify("Aimbot", "Seguimiento activado (ignora lista)")
 
--- Lógica Aimbot CORREGIDA
-Conexiones.Aimbot = RunService.RenderStepped:Connect(function()
-    if not AimbotActivo or not RootPart then return end
-    local MejorObjetivo, MejorDist = nil, math.huge
+        RunService:BindToRenderStep("Aimbot", 202, function()
+            local BestTarget = nil
+            local BestDistance = math.huge
 
-    for _, Objetivo in ipairs(Players:GetPlayers()) do
-        if Objetivo == LocalPlayer then continue end
-        local Char = Objetivo.Character
-        if not Char then continue end
-        local Hum = Char:FindFirstChildOfClass("Humanoid")
-        local RootP = Char:FindFirstChild("HumanoidRootPart")
-        if not Hum or not RootP or Hum.Health <= 0 then continue end
+            for _, Player in ipairs(Players:GetPlayers()) do
+                if Player ~= LocalPlayer and Player.Character and not IsIgnored(Player.Name) then
+                    local Hum = Player.Character:FindFirstChild("Humanoid")
+                    local Root = Player.Character:FindFirstChild("HumanoidRootPart")
+                    if Hum and Root and Hum.Health > 0 then
+                        local Head = Player.Character:FindFirstChild("Head") or Root
+                        local ScreenPos, Visible = Camera:WorldToViewportPoint(Head.Position)
 
-        local Parte = ApuntarCabeza and Char:FindFirstChild("Head") or RootP
-        if not Parte then continue end
-
-        -- Verificación de visión exacta
-        local Visible = true
-        if SoloConVision then
-            local Rayo = Ray.new(Camera.CFrame.Position, (Parte.Position - Camera.CFrame.Position).Unit * 1000)
-            local Ignorar = {LocalPlayer.Character, Char}
-            local Golpeado = Workspace:FindPartOnRayWithIgnoreList(Rayo, Ignorar)
-            Visible = not Golpeado or Golpeado:IsDescendantOf(Char)
-        end
-        if not Visible then continue end
-
-        local EnPantalla, EnVista = Camera:WorldToViewportPoint(Parte.Position)
-        if EnVista then
-            local Centro = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
-            local Distancia = (Vector2.new(EnPantalla.X, EnPantalla.Y) - Centro).Magnitude
-            if Distancia < FOV and Distancia < MejorDist then
-                MejorDist = Distancia
-                MejorObjetivo = Parte
-            end
-        end
-    end
-
-    if MejorObjetivo then
-        Camera.CFrame = CFrame.new(Camera.CFrame.Position, MejorObjetivo.Position)
-    end
-end)
-
--- ==================== ESP JUGADORES (ORDENADO + TEXTO ROJO) ====================
-local ESPJugBtn = CrearBoton("ESP Jugadores")
-ESPJugBtn.MouseButton1Click:Connect(function()
-    ESPJugadoresActivo = not ESPJugadoresActivo
-    ESPJugBtn.Text = ESPJugadoresActivo and "ESP Jugadores : ON" or "ESP Jugadores : OFF"
-    ESPJugBtn.TextColor3 = ESPJugadoresActivo and Color3.fromRGB(80, 255, 120) or Color3.fromRGB(255, 90, 90)
-    -- Borrar todo al desactivar
-    if not ESPJugadoresActivo then
-        for _, Datos in pairs(DatosESP) do
-            if Datos.Contorno then Datos.Contorno:Destroy() end
-            if Datos.Texto then Datos.Texto.Parent:Destroy() end
-        end
-        DatosESP = {}
-    end
-end)
-
-Conexiones.ESPJug = RunService.RenderStepped:Connect(function()
-    if not ESPJugadoresActivo then return end
-    local Activos = {}
-
-    for _, Objetivo in ipairs(Players:GetPlayers()) do
-        if Objetivo == LocalPlayer then continue end
-        local Char = Objetivo.Character
-        if not Char then continue end
-        local Hum = Char:FindFirstChildOfClass("Humanoid")
-        local RootP = Char:FindFirstChild("HumanoidRootPart")
-        if not Hum or not RootP or Hum.Health <= 0 then
-            if DatosESP[Objetivo.UserId] then
-                DatosESP[Objetivo.UserId].Contorno:Destroy()
-                DatosESP[Objetivo.UserId].Texto.Parent:Destroy()
-                DatosESP[Objetivo.UserId] = nil
-            end
-            continue
-        end
-
-        Activos[Objetivo.UserId] = true
-        local Distancia = math.floor((RootPart.Position - RootP.Position).Magnitude)
-
-        if not DatosESP[Objetivo.UserId] then
-            -- Contorno que se ve por paredes
-            local Contorno = Instance.new("Highlight")
-            Contorno.Adornee = Char
-            Contorno.FillTransparency = 1
-            Contorno.OutlineTransparency = 0
-            Contorno.OutlineColor = Color3.fromRGB(255, 0, 0) -- Rojo brillante
-            Contorno.OutlineThickness = 2
-            Contorno.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-            Contorno.Parent = ScreenGui
-
-            -- Texto ordenado y en rojo
-            local GuiTexto = Instance.new("BillboardGui")
-            GuiTexto.Adornee = Char:FindFirstChild("Head") or RootP
-            GuiTexto.Size = UDim2.new(0, 230, 0, 80)
-            GuiTexto.AlwaysOnTop = true
-            GuiTexto.Parent = ScreenGui
-
-            local Etiqueta = Instance.new("TextLabel")
-            Etiqueta.Size = UDim2.new(1, 0, 1, 0)
-            Etiqueta.BackgroundTransparency = 1
-            Etiqueta.TextColor3 = Color3.fromRGB(255, 30, 30) -- Rojo que resalta
-            Etiqueta.TextStrokeTransparency = 0.3 -- Borde negro para que se lea mejor
-            Etiqueta.TextStrokeColor3 = Color3.new(0,0,0)
-            Etiqueta.TextSize = 15
-            Etiqueta.Font = Enum.Font.GothamBold
-            Etiqueta.TextWrapped = true
-            Etiqueta.TextAlign = Enum.TextAlign.Center
-            Etiqueta.Parent = GuiTexto
-
-            DatosESP[Objetivo.UserId] = {
-                Contorno = Contorno,
-                Texto = Etiqueta
-            }
-        end
-
-        -- Texto ordenado
-        DatosESP[Objetivo.UserId].Texto.Text = string.format([[
-👤 %s
-❤️ Vida: %d / 100
-📏 Distancia: %d m
-        ]], Objetivo.Name, math.floor(Hum.Health), Distancia)
-    end
-
-    -- Limpiar jugadores que ya no están
-    for Id in pairs(DatosESP) do
-        if not Activos[Id] then
-            if DatosESP[Id].Contorno then DatosESP[Id].Contorno:Destroy() end
-            if DatosESP[Id].Texto then DatosESP[Id].Texto.Parent:Destroy() end
-            DatosESP[Id] = nil
-        end
-    end
-end)
-
--- ==================== ESP INVENTARIO (CORREGIDO, SE DESACTIVA) ====================
-local ESPInvBtn = CrearBoton("ESP Inventario")
-ESPInvBtn.MouseButton1Click:Connect(function()
-    ESPInventarioActivo = not ESPInventarioActivo
-    ESPInvBtn.Text = ESPInventarioActivo and "ESP Inventario : ON" or "ESP Inventario : OFF"
-    ESPInvBtn.TextColor3 = ESPInventarioActivo and Color3.fromRGB(80, 255, 120) or Color3.fromRGB(255, 90, 90)
-    -- Borrar todo al desactivar
-    if not ESPInventarioActivo then
-        for _, Datos in pairs(DatosESP) do
-            if Datos.Inventario then
-                Datos.Inventario.Parent:Destroy()
-                Datos.Inventario = nil
-            end
-        end
-    end
-end)
-
-Conexiones.ESPInv = RunService.RenderStepped:Connect(function()
-    if not ESPInventarioActivo then return end
-
-    for _, Objetivo in ipairs(Players:GetPlayers()) do
-        if Objetivo == LocalPlayer then continue end
-        local Char = Objetivo.Character
-        if not Char then continue end
-        local Hum = Char:FindFirstChildOfClass("Humanoid")
-        local RootP = Char:FindFirstChild("HumanoidRootPart")
-        if not Hum or not RootP or Hum.Health <= 0 then
-            if DatosESP[Objetivo.UserId] and DatosESP[Objetivo.UserId].Inventario then
-                DatosESP[Objetivo.UserId].Inventario.Parent:Destroy()
-                DatosESP[Objetivo.UserId].Inventario = nil
-            end
-            continue
-        end
-
-        -- Obtener objetos
-        local Lista = {}
-        if Objetivo.Backpack then
-            for _, Item in ipairs(Objetivo.Backpack:GetChildren()) do
-                if Item:IsA("Tool") then
-                    table.insert(Lista, "• " .. Item.Name)
+                        if Visible then
+                            local DistToCenter = (Vector2.new(ScreenPos.X, ScreenPos.Y) - Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)).Magnitude
+                            if DistToCenter < FOV_Size and DistToCenter < BestDistance then
+                                BestDistance = DistToCenter
+                                BestTarget = Head
+                            end
+                        end
+                    end
                 end
             end
-        end
-        local Equipado = Hum:FindFirstChildOfClass("Tool")
-        if Equipado then
-            table.insert(Lista, "✅ EQUIPADO: " .. Equipado.Name)
-        end
 
-        local TextoInv = #Lista > 0 and table.concat(Lista, "\n") or "Sin objetos"
-
-        if not DatosESP[Objetivo.UserId] then DatosESP[Objetivo.UserId] = {} end
-        if not DatosESP[Objetivo.UserId].Inventario then
-            local GuiInv = Instance.new("BillboardGui")
-            GuiInv.Adornee = RootP
-            GuiInv.Size = UDim2.new(0, 260, 0, 220)
-            GuiInv.AlwaysOnTop = true
-            GuiInv.Parent = ScreenGui
-
-            local EtiquetaInv = Instance.new("TextLabel")
-            EtiquetaInv.Size = UDim2.new(1, 0, 1, 0)
-            EtiquetaInv.BackgroundTransparency = 1
-            EtiquetaInv.TextColor3 = Color3.fromRGB(120, 255, 120)
-            EtiquetaInv.TextStrokeTransparency = 0.4
-            EtiquetaInv.TextStrokeColor3 = Color3.new(0,0,0)
-            EtiquetaInv.TextSize = 12
-            EtiquetaInv.Font = Enum.Font.GothamSemibold
-            EtiquetaInv.TextWrapped = true
-            EtiquetaInv.TextAlign = Enum.TextAlign.Center
-            EtiquetaInv.Parent = GuiInv
-
-            DatosESP[Objetivo.UserId].Inventario = EtiquetaInv
-        end
-
-        DatosESP[Objetivo.UserId].Inventario.Text = "🎒 INVENTARIO:\n" .. TextoInv
-    end
-end)
-
--- ==================== CUENTAS OFICIALES ====================
-local MarcoCuentas = Instance.new("Frame")
-MarcoCuentas.Size = UDim2.new(0, 420, 0, 110)
-MarcoCuentas.BackgroundColor3 = Color3.fromRGB(28, 31, 40)
-MarcoCuentas.Parent = Contenido
-Instance.new("UICorner", MarcoCuentas).CornerRadius = UDim.new(0, 10)
-local BordeCuentas = Instance.new("UIStroke")
-BordeCuentas.Thickness = 1
-BordeCuentas.Color = Color3.fromRGB(85, 180, 255)
-BordeCuentas.Parent = MarcoCuentas
-
-local TituloCuentas = Instance.new("TextLabel")
-TituloCuentas.Size = UDim2.new(1, -10, 0, 25)
-TituloCuentas.Position = UDim2.new(0, 5, 0, 2)
-TituloCuentas.BackgroundTransparency = 1
-TituloCuentas.Text = "📱 CUENTAS OFICIALES"
-TituloCuentas.TextColor3 = Color3.fromRGB(120, 230, 255)
-TituloCuentas.TextSize = 15
-TituloCuentas.Font = Enum.Font.GothamBold
-TituloCuentas.Parent = MarcoCuentas
-
-local BtnTocinacio = Instance.new("TextButton")
-BtnTocinacio.Size = UDim2.new(0.94, 0, 0, 35)
-BtnTocinacio.Position = UDim2.new(0.03, 0, 0, 32)
-BtnTocinacio.BackgroundColor3 = Color3.fromRGB(40, 120, 220)
-BtnTocinacio.Text = "✅ CUENTA OFICIAL DE TOCINACIO23021"
-BtnTocinacio.TextColor3 = Color3.new(1, 1, 1)
-BtnTocinacio.TextSize = 14
-BtnTocinacio.Font = Enum.Font.GothamSemibold
-BtnTocinacio.Parent = MarcoCuentas
-Instance.new("UICorner", BtnTocinacio).CornerRadius = UDim.new(0, 8)
-
-BtnTocinacio.MouseButton1Click:Connect(function()
-    setclipboard("tiktok.com/@tocinacio23021_oficial")
-    BtnTocinacio.Text = "✅ Enlace copiado!"
-    task.wait(1.5)
-    BtnTocinacio.Text = "✅ CUENTA OFICIAL DE TOCINACIO23021"
-end)
-
-local BtnEder = Instance.new("TextButton")
-BtnEder.Size = UDim2.new(0.94, 0, 0, 35)
-BtnEder.Position = UDim2.new(0.03, 0, 0, 72)
-BtnEder.BackgroundColor3 = Color3.fromRGB(40, 120, 220)
-BtnEder.Text = "✅ CUENTA OFICIAL DE EDER2302"
-BtnEder.TextColor3 = Color3.new(1, 1, 1)
-BtnEder.TextSize = 14
-BtnEder.Font = Enum.Font.GothamSemibold
-BtnEder.Parent = MarcoCuentas
-Instance.new("UICorner", BtnEder).CornerRadius = UDim.new(0, 8)
-
-BtnEder.MouseButton1Click:Connect(function()
-    setclipboard("tiktok.com/@eder.sanchez77")
-    BtnEder.Text = "✅ Enlace copiado!"
-    task.wait(1.5)
-    BtnEder.Text = "✅ CUENTA OFICIAL DE EDER2302"
-end)
-
--- ==================== CONTROL FINAL ====================
-local Minimizado = false
-MinimizarBtn.MouseButton1Click:Connect(function()
-    Minimizado = not Minimizado
-    if Minimizado then
-        Contenido.Visible = false
-        MainFrame.Size = UDim2.new(0, 420, 0, 60)
+            if BestTarget then
+                Camera.CFrame = CFrame.new(Camera.CFrame.Position, BestTarget.Position)
+            end
+        end)
     else
-        Contenido.Visible = true
-        MainFrame.Size = UDim2.new(0, 420, 0, 650)
+        AimbotBtn.Text = "Aimbot : OFF"
+        AimbotBtn.TextColor3 = Color3.fromRGB(255, 85, 85)
+        AimbotBtn.BackgroundColor3 = Color3.fromRGB(26, 31, 44)
+        FOV_Circle.Visible = false
+        Notify("Aimbot", "Seguimiento desactivado")
+        RunService:UnbindFromRenderStep("Aimbot")
     end
 end)
 
-CerrarBtn.MouseButton1Click:Connect(function()
-    for _, Conexion in pairs(Conexiones) do
-        if typeof(Conexion) == "RBXScriptConnection" then
-            Conexion:Disconnect()
-        end
-    end
-    ScreenGui:Destroy()
+-- Sección cuentas oficiales mejorada
+local AccountsFrame = Instance.new("Frame")
+AccountsFrame.Size = UDim2.new(0.98, 0, 0, 160)
+AccountsFrame.BackgroundColor3 = Color3.fromRGB(18, 22, 32)
+AccountsFrame.BorderSizePixel = 0
+AccountsFrame.Parent = ContentFrame
+
+Instance.new("UICorner", AccountsFrame).CornerRadius = UDim.new(0, 16)
+local AccountsStroke = Instance.new("UIStroke")
+AccountsStroke.Thickness = 1.3
+AccountsStroke.Color = Color3.fromRGB(65, 145, 255)
+AccountsStroke.Transparency = 0.18
+AccountsStroke.Parent = AccountsFrame
+
+local AccountsTitle = Instance.new("TextLabel")
+AccountsTitle.Size = UDim2.new(1, -20, 0, 40)
+AccountsTitle.Position = UDim2.new(0, 12, 0, 8)
+AccountsTitle.BackgroundTransparency = 1
+AccountsTitle.Text = "📘 CUENTAS OFICIALES"
+AccountsTitle.TextColor3 = Color3.fromRGB(90, 190, 255)
+AccountsTitle.TextSize = 17
+AccountsTitle.Font = Enum.Font.GothamBold
+AccountsTitle.TextXAlignment = Enum.TextXAlignment.Left
+AccountsTitle.Parent = AccountsFrame
+
+local Btn_Tocina = Instance.new("TextButton")
+Btn_Tocina.Size = UDim2.new(0.95, 0, 0, 48)
+Btn_Tocina.Position = UDim2.new(0.025, 0, 0, 52)
+Btn_Tocina.BackgroundColor3 = Color3.fromRGB(45, 115, 255)
+Btn_Tocina.Text = "✅ Copiar: TOCINACIO23021"
+Btn_Tocina.TextColor3 = Color3.new(1, 1, 1)
+Btn_Tocina.TextSize = 16
+Btn_Tocina.Font = Enum.Font.GothamBold
+Btn_Tocina.AutoButtonColor = false
+Btn_Tocina.Parent = AccountsFrame
+
+Instance.new("UICorner", Btn_Tocina).CornerRadius = UDim.new(0, 10)
+local Btn1Stroke = Instance.new("UIStroke")
+Btn1Stroke.Thickness = 1
+Btn1Stroke.Color = Color3.fromRGB(85, 155, 255)
+Btn1Stroke.Transparency = 0.2
+Btn1Stroke.Parent = Btn_Tocina
+
+Btn_Tocina.MouseEnter:Connect(function() Btn_Tocina.BackgroundColor3 = Color3.fromRGB(55, 135, 255) end)
+Btn_Tocina.MouseLeave:Connect(function() Btn_Tocina.BackgroundColor3 = Color3.fromRGB(45, 115, 255) end)
+Btn_Tocina.MouseButton1Click:Connect(function()
+    setclipboard("tiktok.com/@tocinacio23021_oficial")
+    Notify("Copiado", "Enlace de Tocina23021 guardado")
 end)
 
--- Actualizar al reaparecer
-LocalPlayer.CharacterAdded:Connect(function(NuevoChar)
-    Character = NuevoChar
-    RootPart = NuevoChar:WaitForChild("HumanoidRootPart", 10)
-    Humanoid = NuevoChar:WaitForChild("Humanoid", 10)
+local Btn_Eder = Instance.new("TextButton")
+Btn_Eder.Size = UDim2.new(0.95, 0, 0, 48)
+Btn_Eder.Position = UDim2.new(0.025, 0, 0, 104)
+Btn_Eder.BackgroundColor3 = Color3.fromRGB(45, 115, 255)
+Btn_Eder.Text = "✅ Copiar: EDER2302"
+Btn_Eder.TextColor3 = Color3.new(1, 1, 1)
+Btn_Eder.TextSize = 16
+Btn_Eder.Font = Enum.Font.GothamBold
+Btn_Eder.AutoButtonColor = false
+Btn_Eder.Parent = AccountsFrame
+
+Instance.new("UICorner", Btn_Eder).CornerRadius = UDim.new(0, 10)
+local Btn2Stroke = Instance.new("UIStroke")
+Btn2Stroke.Thickness = 1
+Btn2Stroke.Color = Color3.fromRGB(85, 155, 255)
+Btn2Stroke.Transparency = 0.2
+Btn2Stroke.Parent = Btn_Eder
+
+Btn_Eder.MouseEnter:Connect(function() Btn_Eder.BackgroundColor3 = Color3.fromRGB(55, 135, 255) end)
+Btn_Eder.MouseLeave:Connect(function() Btn_Eder.BackgroundColor3 = Color3.fromRGB(45, 115, 255) end)
+Btn_Eder.MouseButton1Click:Connect(function()
+    setclipboard("tiktok.com/@eder.sanchez77")
+    Notify("Copiado", "Enlace de Eder2302 guardado")
 end)
 
--- Notificación
-task.spawn(function()
-    StarterGui:SetCore("SendNotification", {
-        Title = "✅ Panel Actualizado",
-        Text = "Todo corregido y listo para usar",
-        Duration = 3
-    })
+-- Actualizar personaje al respawnear
+LocalPlayer.CharacterAdded:Connect(function(newChar)
+    Character = newChar
+    RootPart = Character:WaitForChild("HumanoidRootPart", 10)
+    Humanoid = Character:WaitForChild("Humanoid", 10)
+    if Speed_Enabled then Humanoid.WalkSpeed = Speed_Value end
 end)
 
-print("✅ PANEL LISTO | COMPATIBLE CON DELTA")
+print("✅ BlockSpinEder EDER2302 • Hecho por TOCINACIO23021 | Versión 3.2 PRO")
