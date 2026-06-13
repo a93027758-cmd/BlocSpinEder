@@ -1,0 +1,517 @@
+-- BLOCK SPIN EDER PANEL | COMPATIBLE CON DELTA EXECUTOR
+-- ADVERTENCIA: Viola los Términos de Servicio de Roblox. Úsalo bajo tu propia responsabilidad.
+
+-- Servicios
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
+local Camera = Workspace.CurrentCamera
+local StarterGui = game:GetService("StarterGui")
+
+-- Jugador local
+local LocalPlayer = Players.LocalPlayer
+local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+local RootPart = Character:WaitForChild("HumanoidRootPart", 10)
+local Humanoid = Character:WaitForChild("Humanoid", 10)
+
+-- Variables generales
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "BlockSpinEderPanel"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui", 10)
+
+local AimbotActivo = false
+local FOV = 90
+local ApuntarCabeza = true
+local SoloConVision = true -- Controla si apunta solo lo que ves
+local ESPJugadoresActivo = false
+local ESPInventarioActivo = false
+local DatosESP = {}
+local Conexiones = {}
+
+-- ==================== INTERFAZ PRINCIPAL ====================
+local MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.new(0, 420, 0, 650)
+MainFrame.Position = UDim2.new(0.5, -210, 0.5, -325)
+MainFrame.BackgroundColor3 = Color3.fromRGB(20, 22, 28)
+MainFrame.BorderSizePixel = 0
+MainFrame.Active = true
+MainFrame.Draggable = true
+MainFrame.Parent = ScreenGui
+Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 14)
+local BordeMain = Instance.new("UIStroke")
+BordeMain.Thickness = 2
+BordeMain.Color = Color3.fromRGB(85, 180, 255)
+BordeMain.Parent = MainFrame
+
+-- Título
+local Titulo = Instance.new("TextLabel")
+Titulo.Size = UDim2.new(1, 0, 0, 60)
+Titulo.BackgroundColor3 = Color3.fromRGB(15, 17, 24)
+Titulo.Text = "💎 BLOCK SPIN EDER PANEL\n👤 TAMBIÉN DE TOCINACIO23021"
+Titulo.TextColor3 = Color3.fromRGB(120, 220, 255)
+Titulo.TextSize = 18
+Titulo.Font = Enum.Font.GothamBold
+Titulo.TextWrapped = true
+Titulo.Parent = MainFrame
+Instance.new("UICorner", Titulo).CornerRadius = UDim.new(0, 14)
+
+-- Botones Minimizar y Cerrar
+local MinimizarBtn = Instance.new("TextButton")
+MinimizarBtn.Size = UDim2.new(0, 38, 0, 38)
+MinimizarBtn.Position = UDim2.new(1, -85, 0, 11)
+MinimizarBtn.BackgroundColor3 = Color3.fromRGB(255, 180, 0)
+MinimizarBtn.Text = "−"
+MinimizarBtn.TextColor3 = Color3.new(1, 1, 1)
+MinimizarBtn.TextSize = 24
+MinimizarBtn.Font = Enum.Font.GothamBold
+MinimizarBtn.Parent = MainFrame
+Instance.new("UICorner", MinimizarBtn).CornerRadius = UDim.new(0, 8)
+
+local CerrarBtn = Instance.new("TextButton")
+CerrarBtn.Size = UDim2.new(0, 38, 0, 38)
+CerrarBtn.Position = UDim2.new(1, -43, 0, 11)
+CerrarBtn.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
+CerrarBtn.Text = "×"
+CerrarBtn.TextColor3 = Color3.new(1, 1, 1)
+CerrarBtn.TextSize = 24
+CerrarBtn.Font = Enum.Font.GothamBold
+CerrarBtn.Parent = MainFrame
+Instance.new("UICorner", CerrarBtn).CornerRadius = UDim.new(0, 8)
+
+-- Área desplazable
+local Contenido = Instance.new("ScrollingFrame")
+Contenido.Size = UDim2.new(1, -15, 1, -70)
+Contenido.Position = UDim2.new(0, 7, 0, 63)
+Contenido.BackgroundTransparency = 1
+Contenido.ScrollBarThickness = 9
+Contenido.ScrollBarImageColor3 = Color3.fromRGB(85, 180, 255)
+Contenido.CanvasSize = UDim2.new(0, 0, 1500, 0)
+Contenido.Parent = MainFrame
+
+local ListaLayout = Instance.new("UIListLayout")
+ListaLayout.Padding = UDim.new(0, 16)
+ListaLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+ListaLayout.SortOrder = Enum.SortOrder.LayoutOrder
+ListaLayout.Parent = Contenido
+
+ListaLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+    Contenido.CanvasSize = UDim2.new(0, 0, ListaLayout.AbsoluteContentSize.Y + 40, 0)
+end)
+
+-- Función para crear botones
+local function CrearBoton(Texto)
+    local Boton = Instance.new("TextButton")
+    Boton.Size = UDim2.new(0.92, 0, 0, 50)
+    Boton.BackgroundColor3 = Color3.fromRGB(32, 35, 45)
+    Boton.Text = Texto .. " : OFF"
+    Boton.TextColor3 = Color3.fromRGB(255, 90, 90)
+    Boton.TextSize = 16
+    Boton.Font = Enum.Font.GothamSemibold
+    Boton.AutoButtonColor = false
+    Boton.Parent = Contenido
+    Instance.new("UICorner", Boton).CornerRadius = UDim.new(0, 10)
+    local Borde = Instance.new("UIStroke")
+    Borde.Thickness = 0.8
+    Borde.Color = Color3.fromRGB(60, 70, 90)
+    Borde.Parent = Boton
+    return Boton
+end
+
+-- ==================== AIMBOT (CORREGIDO) ====================
+local MarcoAimbot = Instance.new("Frame")
+MarcoAimbot.Size = UDim2.new(0.92, 0, 0, 160)
+MarcoAimbot.BackgroundColor3 = Color3.fromRGB(32, 35, 45)
+MarcoAimbot.Parent = Contenido
+Instance.new("UICorner", MarcoAimbot).CornerRadius = UDim.new(0, 10)
+local BordeMarco = Instance.new("UIStroke")
+BordeMarco.Thickness = 0.8
+BordeMarco.Color = Color3.fromRGB(60, 70, 90)
+BordeMarco.Parent = MarcoAimbot
+
+-- Círculo FOV
+local CirculoFOV = Instance.new("Frame")
+CirculoFOV.AnchorPoint = Vector2.new(0.5, 0.5)
+CirculoFOV.Position = UDim2.new(0.5, 0, 0.5, 0)
+CirculoFOV.Size = UDim2.new(0, FOV * 2, 0, FOV * 2)
+CirculoFOV.BackgroundTransparency = 1
+CirculoFOV.BorderSizePixel = 0
+CirculoFOV.Visible = false
+CirculoFOV.Parent = ScreenGui
+Instance.new("UICorner", CirculoFOV).CornerRadius = UDim.new(1, 0)
+local BordeFOV = Instance.new("UIStroke")
+BordeFOV.Thickness = 2
+BordeFOV.Color = Color3.fromRGB(255, 60, 60)
+BordeFOV.Transparency = 0.2
+BordeFOV.Parent = CirculoFOV
+
+local AimbotBtn = CrearBoton("Aimbot")
+AimbotBtn.Size = UDim2.new(0.45, 0, 0, 35)
+AimbotBtn.Position = UDim2.new(0.03, 0, 0, 8)
+AimbotBtn.Parent = MarcoAimbot
+
+local CajaFOV = Instance.new("TextBox")
+CajaFOV.Size = UDim2.new(0.45, 0, 0, 35)
+CajaFOV.Position = UDim2.new(0.52, 0, 0, 8)
+CajaFOV.BackgroundColor3 = Color3.fromRGB(25, 28, 38)
+CajaFOV.Text = tostring(FOV)
+CajaFOV.TextColor3 = Color3.new(1, 1, 1)
+CajaFOV.TextSize = 16
+CajaFOV.Font = Enum.Font.GothamSemibold
+CajaFOV.Parent = MarcoAimbot
+Instance.new("UICorner", CajaFOV).CornerRadius = UDim.new(0, 8)
+
+local ApuntarParteBtn = Instance.new("TextButton")
+ApuntarParteBtn.Size = UDim2.new(0.94, 0, 0, 35)
+ApuntarParteBtn.Position = UDim2.new(0.03, 0, 0, 50)
+ApuntarParteBtn.BackgroundColor3 = Color3.fromRGB(38, 42, 55)
+ApuntarParteBtn.Text = "🎯 Apuntar: Cabeza"
+ApuntarParteBtn.TextColor3 = Color3.fromRGB(255, 200, 100)
+ApuntarParteBtn.TextSize = 15
+ApuntarParteBtn.Font = Enum.Font.GothamSemibold
+ApuntarParteBtn.Parent = MarcoAimbot
+Instance.new("UICorner", ApuntarParteBtn).CornerRadius = UDim.new(0, 8)
+
+-- Opción Solo con visión
+local SoloVisionBtn = Instance.new("TextButton")
+SoloVisionBtn.Size = UDim2.new(0.94, 0, 0, 35)
+SoloVisionBtn.Position = UDim2.new(0.03, 0, 0, 92)
+SoloVisionBtn.BackgroundColor3 = Color3.fromRGB(38, 42, 55)
+SoloVisionBtn.Text = "👁️ Solo con visión: ON"
+SoloVisionBtn.TextColor3 = Color3.fromRGB(80, 255, 120)
+SoloVisionBtn.TextSize = 15
+SoloVisionBtn.Font = Enum.Font.GothamSemibold
+SoloVisionBtn.Parent = MarcoAimbot
+Instance.new("UICorner", SoloVisionBtn).CornerRadius = UDim.new(0, 8)
+
+CajaFOV.FocusLost:Connect(function()
+    FOV = math.clamp(tonumber(CajaFOV.Text) or 90, 10, 500)
+    CirculoFOV.Size = UDim2.new(0, FOV * 2, 0, FOV * 2)
+end)
+
+ApuntarParteBtn.MouseButton1Click:Connect(function()
+    ApuntarCabeza = not ApuntarCabeza
+    ApuntarParteBtn.Text = ApuntarCabeza and "🎯 Apuntar: Cabeza" or "🎯 Apuntar: Pecho"
+end)
+
+SoloVisionBtn.MouseButton1Click:Connect(function()
+    SoloConVision = not SoloConVision
+    SoloVisionBtn.Text = SoloConVision and "👁️ Solo con visión: ON" or "👁️ Solo con visión: OFF"
+    SoloVisionBtn.TextColor3 = SoloConVision and Color3.fromRGB(80, 255, 120) or Color3.fromRGB(255, 90, 90)
+end)
+
+AimbotBtn.MouseButton1Click:Connect(function()
+    AimbotActivo = not AimbotActivo
+    CirculoFOV.Visible = AimbotActivo
+    AimbotBtn.Text = AimbotActivo and "Aimbot : ON" or "Aimbot : OFF"
+    AimbotBtn.TextColor3 = AimbotActivo and Color3.fromRGB(80, 255, 120) or Color3.fromRGB(255, 90, 90)
+end)
+
+-- Lógica Aimbot CORREGIDA
+Conexiones.Aimbot = RunService.RenderStepped:Connect(function()
+    if not AimbotActivo or not RootPart then return end
+    local MejorObjetivo, MejorDist = nil, math.huge
+
+    for _, Objetivo in ipairs(Players:GetPlayers()) do
+        if Objetivo == LocalPlayer then continue end
+        local Char = Objetivo.Character
+        if not Char then continue end
+        local Hum = Char:FindFirstChildOfClass("Humanoid")
+        local RootP = Char:FindFirstChild("HumanoidRootPart")
+        if not Hum or not RootP or Hum.Health <= 0 then continue end
+
+        local Parte = ApuntarCabeza and Char:FindFirstChild("Head") or RootP
+        if not Parte then continue end
+
+        -- Verificación de visión exacta
+        local Visible = true
+        if SoloConVision then
+            local Rayo = Ray.new(Camera.CFrame.Position, (Parte.Position - Camera.CFrame.Position).Unit * 1000)
+            local Ignorar = {LocalPlayer.Character, Char}
+            local Golpeado = Workspace:FindPartOnRayWithIgnoreList(Rayo, Ignorar)
+            Visible = not Golpeado or Golpeado:IsDescendantOf(Char)
+        end
+        if not Visible then continue end
+
+        local EnPantalla, EnVista = Camera:WorldToViewportPoint(Parte.Position)
+        if EnVista then
+            local Centro = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+            local Distancia = (Vector2.new(EnPantalla.X, EnPantalla.Y) - Centro).Magnitude
+            if Distancia < FOV and Distancia < MejorDist then
+                MejorDist = Distancia
+                MejorObjetivo = Parte
+            end
+        end
+    end
+
+    if MejorObjetivo then
+        Camera.CFrame = CFrame.new(Camera.CFrame.Position, MejorObjetivo.Position)
+    end
+end)
+
+-- ==================== ESP JUGADORES (ORDENADO + TEXTO ROJO) ====================
+local ESPJugBtn = CrearBoton("ESP Jugadores")
+ESPJugBtn.MouseButton1Click:Connect(function()
+    ESPJugadoresActivo = not ESPJugadoresActivo
+    ESPJugBtn.Text = ESPJugadoresActivo and "ESP Jugadores : ON" or "ESP Jugadores : OFF"
+    ESPJugBtn.TextColor3 = ESPJugadoresActivo and Color3.fromRGB(80, 255, 120) or Color3.fromRGB(255, 90, 90)
+    -- Borrar todo al desactivar
+    if not ESPJugadoresActivo then
+        for _, Datos in pairs(DatosESP) do
+            if Datos.Contorno then Datos.Contorno:Destroy() end
+            if Datos.Texto then Datos.Texto.Parent:Destroy() end
+        end
+        DatosESP = {}
+    end
+end)
+
+Conexiones.ESPJug = RunService.RenderStepped:Connect(function()
+    if not ESPJugadoresActivo then return end
+    local Activos = {}
+
+    for _, Objetivo in ipairs(Players:GetPlayers()) do
+        if Objetivo == LocalPlayer then continue end
+        local Char = Objetivo.Character
+        if not Char then continue end
+        local Hum = Char:FindFirstChildOfClass("Humanoid")
+        local RootP = Char:FindFirstChild("HumanoidRootPart")
+        if not Hum or not RootP or Hum.Health <= 0 then
+            if DatosESP[Objetivo.UserId] then
+                DatosESP[Objetivo.UserId].Contorno:Destroy()
+                DatosESP[Objetivo.UserId].Texto.Parent:Destroy()
+                DatosESP[Objetivo.UserId] = nil
+            end
+            continue
+        end
+
+        Activos[Objetivo.UserId] = true
+        local Distancia = math.floor((RootPart.Position - RootP.Position).Magnitude)
+
+        if not DatosESP[Objetivo.UserId] then
+            -- Contorno que se ve por paredes
+            local Contorno = Instance.new("Highlight")
+            Contorno.Adornee = Char
+            Contorno.FillTransparency = 1
+            Contorno.OutlineTransparency = 0
+            Contorno.OutlineColor = Color3.fromRGB(255, 0, 0) -- Rojo brillante
+            Contorno.OutlineThickness = 2
+            Contorno.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+            Contorno.Parent = ScreenGui
+
+            -- Texto ordenado y en rojo
+            local GuiTexto = Instance.new("BillboardGui")
+            GuiTexto.Adornee = Char:FindFirstChild("Head") or RootP
+            GuiTexto.Size = UDim2.new(0, 230, 0, 80)
+            GuiTexto.AlwaysOnTop = true
+            GuiTexto.Parent = ScreenGui
+
+            local Etiqueta = Instance.new("TextLabel")
+            Etiqueta.Size = UDim2.new(1, 0, 1, 0)
+            Etiqueta.BackgroundTransparency = 1
+            Etiqueta.TextColor3 = Color3.fromRGB(255, 30, 30) -- Rojo que resalta
+            Etiqueta.TextStrokeTransparency = 0.3 -- Borde negro para que se lea mejor
+            Etiqueta.TextStrokeColor3 = Color3.new(0,0,0)
+            Etiqueta.TextSize = 15
+            Etiqueta.Font = Enum.Font.GothamBold
+            Etiqueta.TextWrapped = true
+            Etiqueta.TextAlign = Enum.TextAlign.Center
+            Etiqueta.Parent = GuiTexto
+
+            DatosESP[Objetivo.UserId] = {
+                Contorno = Contorno,
+                Texto = Etiqueta
+            }
+        end
+
+        -- Texto ordenado
+        DatosESP[Objetivo.UserId].Texto.Text = string.format([[
+👤 %s
+❤️ Vida: %d / 100
+📏 Distancia: %d m
+        ]], Objetivo.Name, math.floor(Hum.Health), Distancia)
+    end
+
+    -- Limpiar jugadores que ya no están
+    for Id in pairs(DatosESP) do
+        if not Activos[Id] then
+            if DatosESP[Id].Contorno then DatosESP[Id].Contorno:Destroy() end
+            if DatosESP[Id].Texto then DatosESP[Id].Texto.Parent:Destroy() end
+            DatosESP[Id] = nil
+        end
+    end
+end)
+
+-- ==================== ESP INVENTARIO (CORREGIDO, SE DESACTIVA) ====================
+local ESPInvBtn = CrearBoton("ESP Inventario")
+ESPInvBtn.MouseButton1Click:Connect(function()
+    ESPInventarioActivo = not ESPInventarioActivo
+    ESPInvBtn.Text = ESPInventarioActivo and "ESP Inventario : ON" or "ESP Inventario : OFF"
+    ESPInvBtn.TextColor3 = ESPInventarioActivo and Color3.fromRGB(80, 255, 120) or Color3.fromRGB(255, 90, 90)
+    -- Borrar todo al desactivar
+    if not ESPInventarioActivo then
+        for _, Datos in pairs(DatosESP) do
+            if Datos.Inventario then
+                Datos.Inventario.Parent:Destroy()
+                Datos.Inventario = nil
+            end
+        end
+    end
+end)
+
+Conexiones.ESPInv = RunService.RenderStepped:Connect(function()
+    if not ESPInventarioActivo then return end
+
+    for _, Objetivo in ipairs(Players:GetPlayers()) do
+        if Objetivo == LocalPlayer then continue end
+        local Char = Objetivo.Character
+        if not Char then continue end
+        local Hum = Char:FindFirstChildOfClass("Humanoid")
+        local RootP = Char:FindFirstChild("HumanoidRootPart")
+        if not Hum or not RootP or Hum.Health <= 0 then
+            if DatosESP[Objetivo.UserId] and DatosESP[Objetivo.UserId].Inventario then
+                DatosESP[Objetivo.UserId].Inventario.Parent:Destroy()
+                DatosESP[Objetivo.UserId].Inventario = nil
+            end
+            continue
+        end
+
+        -- Obtener objetos
+        local Lista = {}
+        if Objetivo.Backpack then
+            for _, Item in ipairs(Objetivo.Backpack:GetChildren()) do
+                if Item:IsA("Tool") then
+                    table.insert(Lista, "• " .. Item.Name)
+                end
+            end
+        end
+        local Equipado = Hum:FindFirstChildOfClass("Tool")
+        if Equipado then
+            table.insert(Lista, "✅ EQUIPADO: " .. Equipado.Name)
+        end
+
+        local TextoInv = #Lista > 0 and table.concat(Lista, "\n") or "Sin objetos"
+
+        if not DatosESP[Objetivo.UserId] then DatosESP[Objetivo.UserId] = {} end
+        if not DatosESP[Objetivo.UserId].Inventario then
+            local GuiInv = Instance.new("BillboardGui")
+            GuiInv.Adornee = RootP
+            GuiInv.Size = UDim2.new(0, 260, 0, 220)
+            GuiInv.AlwaysOnTop = true
+            GuiInv.Parent = ScreenGui
+
+            local EtiquetaInv = Instance.new("TextLabel")
+            EtiquetaInv.Size = UDim2.new(1, 0, 1, 0)
+            EtiquetaInv.BackgroundTransparency = 1
+            EtiquetaInv.TextColor3 = Color3.fromRGB(120, 255, 120)
+            EtiquetaInv.TextStrokeTransparency = 0.4
+            EtiquetaInv.TextStrokeColor3 = Color3.new(0,0,0)
+            EtiquetaInv.TextSize = 12
+            EtiquetaInv.Font = Enum.Font.GothamSemibold
+            EtiquetaInv.TextWrapped = true
+            EtiquetaInv.TextAlign = Enum.TextAlign.Center
+            EtiquetaInv.Parent = GuiInv
+
+            DatosESP[Objetivo.UserId].Inventario = EtiquetaInv
+        end
+
+        DatosESP[Objetivo.UserId].Inventario.Text = "🎒 INVENTARIO:\n" .. TextoInv
+    end
+end)
+
+-- ==================== CUENTAS OFICIALES ====================
+local MarcoCuentas = Instance.new("Frame")
+MarcoCuentas.Size = UDim2.new(0, 420, 0, 110)
+MarcoCuentas.BackgroundColor3 = Color3.fromRGB(28, 31, 40)
+MarcoCuentas.Parent = Contenido
+Instance.new("UICorner", MarcoCuentas).CornerRadius = UDim.new(0, 10)
+local BordeCuentas = Instance.new("UIStroke")
+BordeCuentas.Thickness = 1
+BordeCuentas.Color = Color3.fromRGB(85, 180, 255)
+BordeCuentas.Parent = MarcoCuentas
+
+local TituloCuentas = Instance.new("TextLabel")
+TituloCuentas.Size = UDim2.new(1, -10, 0, 25)
+TituloCuentas.Position = UDim2.new(0, 5, 0, 2)
+TituloCuentas.BackgroundTransparency = 1
+TituloCuentas.Text = "📱 CUENTAS OFICIALES"
+TituloCuentas.TextColor3 = Color3.fromRGB(120, 230, 255)
+TituloCuentas.TextSize = 15
+TituloCuentas.Font = Enum.Font.GothamBold
+TituloCuentas.Parent = MarcoCuentas
+
+local BtnTocinacio = Instance.new("TextButton")
+BtnTocinacio.Size = UDim2.new(0.94, 0, 0, 35)
+BtnTocinacio.Position = UDim2.new(0.03, 0, 0, 32)
+BtnTocinacio.BackgroundColor3 = Color3.fromRGB(40, 120, 220)
+BtnTocinacio.Text = "✅ CUENTA OFICIAL DE TOCINACIO23021"
+BtnTocinacio.TextColor3 = Color3.new(1, 1, 1)
+BtnTocinacio.TextSize = 14
+BtnTocinacio.Font = Enum.Font.GothamSemibold
+BtnTocinacio.Parent = MarcoCuentas
+Instance.new("UICorner", BtnTocinacio).CornerRadius = UDim.new(0, 8)
+
+BtnTocinacio.MouseButton1Click:Connect(function()
+    setclipboard("tiktok.com/@tocinacio23021_oficial")
+    BtnTocinacio.Text = "✅ Enlace copiado!"
+    task.wait(1.5)
+    BtnTocinacio.Text = "✅ CUENTA OFICIAL DE TOCINACIO23021"
+end)
+
+local BtnEder = Instance.new("TextButton")
+BtnEder.Size = UDim2.new(0.94, 0, 0, 35)
+BtnEder.Position = UDim2.new(0.03, 0, 0, 72)
+BtnEder.BackgroundColor3 = Color3.fromRGB(40, 120, 220)
+BtnEder.Text = "✅ CUENTA OFICIAL DE EDER2302"
+BtnEder.TextColor3 = Color3.new(1, 1, 1)
+BtnEder.TextSize = 14
+BtnEder.Font = Enum.Font.GothamSemibold
+BtnEder.Parent = MarcoCuentas
+Instance.new("UICorner", BtnEder).CornerRadius = UDim.new(0, 8)
+
+BtnEder.MouseButton1Click:Connect(function()
+    setclipboard("tiktok.com/@eder.sanchez77")
+    BtnEder.Text = "✅ Enlace copiado!"
+    task.wait(1.5)
+    BtnEder.Text = "✅ CUENTA OFICIAL DE EDER2302"
+end)
+
+-- ==================== CONTROL FINAL ====================
+local Minimizado = false
+MinimizarBtn.MouseButton1Click:Connect(function()
+    Minimizado = not Minimizado
+    if Minimizado then
+        Contenido.Visible = false
+        MainFrame.Size = UDim2.new(0, 420, 0, 60)
+    else
+        Contenido.Visible = true
+        MainFrame.Size = UDim2.new(0, 420, 0, 650)
+    end
+end)
+
+CerrarBtn.MouseButton1Click:Connect(function()
+    for _, Conexion in pairs(Conexiones) do
+        if typeof(Conexion) == "RBXScriptConnection" then
+            Conexion:Disconnect()
+        end
+    end
+    ScreenGui:Destroy()
+end)
+
+-- Actualizar al reaparecer
+LocalPlayer.CharacterAdded:Connect(function(NuevoChar)
+    Character = NuevoChar
+    RootPart = NuevoChar:WaitForChild("HumanoidRootPart", 10)
+    Humanoid = NuevoChar:WaitForChild("Humanoid", 10)
+end)
+
+-- Notificación
+task.spawn(function()
+    StarterGui:SetCore("SendNotification", {
+        Title = "✅ Panel Actualizado",
+        Text = "Todo corregido y listo para usar",
+        Duration = 3
+    })
+end)
+
+print("✅ PANEL LISTO | COMPATIBLE CON DELTA")
